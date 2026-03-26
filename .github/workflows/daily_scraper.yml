@@ -1,0 +1,50 @@
+name: Men Shoes
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 12:00 AM UTC every day
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  scrape:
+    name: Scrape ${{ matrix.module }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        module:
+          - men_footwear_sub1
+          - men_footwear_sub2
+      fail-fast: false       # Let both jobs run even if one fails
+
+    env:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      S3_BUCKET_NAME:        ${{ secrets.S3_BUCKET_NAME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: python -m playwright install chromium --with-deps
+
+      - name: Run ${{ matrix.module }}
+        run: python -m ${{ matrix.module }}.main
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.module }}
+          path: temp_downloads/
+          retention-days: 3
