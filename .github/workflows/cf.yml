@@ -1,8 +1,8 @@
-name: Men Footwear CF – 2 group(s)
+name: Men Footwear – 2 group(s) [Cloudflare R2]
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Runs daily at 2:00 AM UTC
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: [CF.men_footwear_sub1, CF.men_footwear_sub2]
+        module: [men_footwear_sub1,men_footwear_sub2]
       max-parallel: 2
       fail-fast: false
 
@@ -34,17 +34,18 @@ jobs:
           playwright install chromium
 
       - name: Run scraper – ${{ matrix.module }}
+        working-directory: ${{ github.workspace }}/CF
         env:
           CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
           CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
           CF_R2_ENDPOINT_URL: ${{ secrets.CF_R2_ENDPOINT_URL }}
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/CF
         run: |
           python -m ${{ matrix.module }}.main
 
       - name: Job summary
         if: always()
         run: |
-          echo "## ${{ matrix.module }}" >> $GITHUB_STEP_SUMMARY
+          echo "## ${{ matrix.module }} [Cloudflare R2]" >> $GITHUB_STEP_SUMMARY
           echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
